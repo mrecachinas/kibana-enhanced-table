@@ -4,7 +4,7 @@
   "description": "This visualization plugin is like a Data Table, but with enhanced features like computed columns and filter bar",
   "main": "index.js",
   "kibana": {
-    "version": "5.5.0"
+    "version": "5.5.4"
   },
   "scripts": {
     "lint": "eslint",
@@ -23,6 +23,7 @@
     "eslint-plugin-mocha": "1.1.0"
   },
   "dependencies": {
+    "axios": "^0.18.0",
     "expr-eval": "^1.2.0"
   }
 }
