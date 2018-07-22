@@ -1,6 +1,23 @@
 <div ng-controller="EnhancedTableVisController" class="table-vis">
+  <div ng-show="vis.params.showActions" class="actionable-container">
+    <div ng-show="message !== '' || message !== undefined">
+      <div>&nbsp;</div>
+      <div class="response {{ error ? 'error' : '' }}">{{ message }}</div>
+    </div>
+    <div>&nbsp;</div>
+    <textarea type="text" ng-show="vis.params.showExtraActionText" ng-model="extraText" class="extra-text form-control" placeholder="{{vis.params.extraTextPlaceholder}}" />
+    <div>&nbsp;</div>
+    <div class="vis-editor-agg-wide-btn send-button">
+      <div>
+        <div ng-click="sendAllRows(extraText)" class="kuiButton kuiButton--primary kuiButton--small">
+          Send All Rows
+        </div>
+      </div>
+    </div>
+  </div>
 
   <div ng-show="vis.params.showFilterBar && (hasSomeRows || activeFilter !== '')">
+    <div>&nbsp;</div>
     <div ng-hide="showFilterInput()" class="width: 100%;" align="right">
       <a ng-click="enableFilterInput()" class="filterText">Filter</a>
     </div>

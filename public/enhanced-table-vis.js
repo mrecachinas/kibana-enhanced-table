@@ -39,10 +39,16 @@ function EnhancedTableVisProvider(Private) {
         showTotal: false,
         totalFunc: 'sum',
         computedColumns: [],
+        selectedRows: [],
         hideExportLinks: false,
         showFilterBar: false,
+        showActions: false,
+        showExtraActionTest: false,
         filterCaseSensitive: false,
         filterBarHideable: false,
+        extraTextFieldname: "extraText",
+        selectedRowsFieldname: "selectedRows",
+        requestType: "POST",
         filterBarWidth: '25%'
       },
       editor: '<enhanced-table-vis-params></enhanced-table-vis-params>'

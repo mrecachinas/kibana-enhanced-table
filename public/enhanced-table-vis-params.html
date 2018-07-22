@@ -226,4 +226,60 @@
     </select>
   </div>
 
+  <div>&nbsp;</div>
+  <div class="kuiSideBarSectionTitle">
+    <div class="kuiSideBarSectionTitle__text">
+      Actionable Settings
+    </div>
+  </div>
+
+  <div class="checkbox">
+    <label>
+      <input type="checkbox" ng-model="vis.params.showActions">
+      Enable actions
+    </label>
+  </div>
+
+  <div class="checkbox" ng-show="vis.params.showActions">
+    <label>
+      <input type="checkbox" ng-model="vis.params.showExtraActionText">
+      Enable additional required text input
+    </label>
+  </div>
+
+  <div class="form-group" ng-show="vis.params.showExtraActionText">
+    <label>Additional Text Placeholder</label>
+      <input type="text" ng-model="vis.params.extraTextPlaceholder" class="form-control" placeholder="Enter a placeholder for additional text input" />
+  </div>
+
+  <div class="form-group" ng-show="vis.params.showExtraActionText">
+    <label>Additional Text Fieldname</label>
+      <input type="text" ng-model="vis.params.extraTextFieldname" class="form-control" placeholder="default: 'extraText'" />
+  </div>
+
+  <div class="form-group" ng-show="vis.params.showActions">
+    <label>API Endpoint</label>
+    <input type="text" ng-model="vis.params.apiEndpoint" class="form-control" placeholder="https://localhost:1337/dostuff/..." />
+  </div>
+
+  <div class="form-group" ng-show="vis.params.showActions">
+    <label>Postable Columns</label>
+    <input type="text" ng-model="vis.params.postableColumns" class="form-control" placeholder="0,1,..." />
+  </div>
+
+  <div class="form-group" ng-show="vis.params.showActions">
+    <label>Selected Rows Fieldname</label>
+      <input type="text" ng-model="vis.params.selectedRowsFieldname" class="form-control" placeholder="default: 'selectedRows'" />
+  </div>
+
+  <div class="form-group">
+    <label>HTTP Request Type</label>
+    <select ng-model="vis.params.requestType" class="form-control">
+      <option label="GET" value="GET">GET</option>
+      <option label="POST" value="POST" selected>POST</option>
+      <option label="PUT" value="PUT">PUT</option>
+      <option label="DELETE" value="DELETE">DELETE</option>
+    </select>
+  </div>
+
 </div>

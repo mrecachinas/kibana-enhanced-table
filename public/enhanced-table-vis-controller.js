@@ -2,6 +2,7 @@ import { AggResponseTabifyProvider } from 'ui/agg_response/tabify/tabify';
 import { RegistryFieldFormatsProvider } from 'ui/registry/field_formats';
 import { uiModules } from 'ui/modules';
 import _ from 'lodash';
+import axios from 'axios';
 import { VisAggConfigProvider } from 'ui/vis/agg_config';
 import AggConfigResult from 'ui/vis/agg_config_result';
 import { Parser } from 'expr-eval';
@@ -27,6 +28,35 @@ module.controller('EnhancedTableVisController', function ($scope, $element, Priv
   const createParser = function (computedColumn) {
     let expression = computedColumn.formula.replace(/col\[(\d+)\]/g, 'col$1');
     return Parser.parse(expression);
+  };
+
+  const createCheckboxes = function(rows, column) {
+    _.forEach(rows, function (row) {
+      let parent = row.length > 0 && row[row.length-1];
+      let value = '<input type="checkbox" />';
+      let newCell = new AggConfigResult(column.aggConfig, parent, value, value);
+
+      newCell.column = column;
+      if (column.copyRowForTemplate) {
+        newCell.row = _.clone(row);
+      }
+      newCell.toString = renderCell;
+      row.push(newCell);
+    });
+  };
+
+  const createCheckboxColumn = function () {
+    const newColumn = {
+      aggConfig: new AggConfig($scope.vis, {schema: 'metric', type: 'count'}),
+      title: '<input type="checkbox" />',
+      fieldFormatter: {},
+      alignment: 'center',
+      expressionParamsCols: [],
+    };
+    newColumn.aggConfig.id = `1.checkbox`;
+    newColumn.aggConfig.key = `checkbox`;
+    newColumn.template = handlebars.compile('<input type="checkbox" />');
+    return newColumn;
   };
 
   const createColumn = function (computedColumn, index) {
@@ -86,12 +116,13 @@ module.controller('EnhancedTableVisController', function ($scope, $element, Priv
   const createTables = function (tables, computedColumn, index, parser, newColumn) {
     _.forEach(tables, function (table) {
       if (table.tables) {
-        createTables(table.tables, computedColumn, index, parser, newColumn);
+        createTables(table.tables, computedColumn, index, parser, newColumn, actionable);
         return;
       }
 
       table.columns.push(newColumn);
       createComputedCells(newColumn, table.rows, computedColumn, parser);
+      createCheckboxes(table.rows);
     });
   };
 
@@ -152,6 +183,15 @@ module.controller('EnhancedTableVisController', function ($scope, $element, Priv
     });
   };
 
+  const sendRequest = function (httpType, url, data) {
+    const normUrl = !url.startsWith("http") ? "http://" + url : url;
+    return axios({
+      method: httpType.toLowerCase(),
+      url: normUrl,
+      data: data,
+    });
+  };
+
   // filter scope methods
   $scope.doFilter = function () {
     $scope.activeFilter = $scope.vis.filterInput;
@@ -181,6 +221,84 @@ module.controller('EnhancedTableVisController', function ($scope, $element, Priv
     $scope.uiState.set('vis.params.sort', newSort);
   });
 
+  $scope.sendAllRows = function(extraText) {
+    const extraTextFieldname = $scope.vis.params.extraTextFieldname;
+    const selectedRowsFieldname = ($scope.vis.params.selectedRowsFieldname === "" ||
+                                   $scope.vis.params.selectedRowsFieldname === undefined) ? 
+                                   "selectedRows": $scope.vis.params.selectedRowsFieldname;
+    const apiEndpoint = $scope.vis.params.apiEndpoint;
+    const requestType = $scope.vis.params.requestType;
+    const showExtraActionText = $scope.vis.params.showExtraActionText;
+
+    const tables = $scope.tableGroups.tables;
+    const postableColumnsString = $scope.vis.params.postableColumns;
+    const postableColumnsStringArray = (postableColumnsString === undefined ||
+                                        postableColumnsString === "") ? [] :
+                                        postableColumnsString.split(',');
+    const postableColumnsStringArrayNotEmpty = postableColumnsStringArray.filter(function(c) {
+      return c !== "";
+    });
+
+    const postableColumns = postableColumnsStringArrayNotEmpty.map(function(c) {
+      return parseInt(c);
+    });
+
+    const selectedRows = _.flatten(_.map(tables, function(table) {
+      return _.map(table.rows, function(row) {
+        const columnNames = _.map(table.columns, function(col) {
+          return col.title;
+        });
+
+        let result = {};
+        _.forEach(row, function(columnInRow, index) {
+          const shouldAdd = (postableColumns === undefined || postableColumns.length === 0) ||
+                            (postableColumns.indexOf(index) !== -1);
+
+          if (shouldAdd) {
+            result[columnNames[index]] = columnInRow.value;
+          }
+        });
+        return result;
+      });
+    }));
+
+    // TODO: Propagate error back to viz
+    if ((extraText === undefined || extraText === "") && showExtraActionText) {
+      $scope.message = `Error: Please enter text in text box below.`;
+      $scope.error = true;
+      return;
+    }
+
+    if (selectedRows.length === 0) {
+      $scope.message = `Error: No rows to send.`;
+      $scope.error = true;
+      return;
+    }
+
+    if (apiEndpoint === undefined || apiEndpoint === "") {
+      $scope.message = `Error: This component is misconfigured. Please add an API URL.`;
+      $scope.error = true;
+      return;
+    }
+
+    const request = {
+      [selectedRowsFieldname]: selectedRows,
+    };
+
+    if (extraText !== undefined && extraText !== "") {
+      request[extraTextFieldname] = extraText;
+    }
+
+    const response = sendRequest(requestType, apiEndpoint, request);
+    response.then(function(res) {
+      $scope.message = "Success!";
+      $scope.error = false;
+    }).catch(function(err) {
+      $scope.message = `Error: ${err}`;
+      $scope.error = true;
+    });
+  };
+
   /**
    * Recreate the entire table when:
    * - the underlying data changes (esResponse)
@@ -188,7 +306,8 @@ module.controller('EnhancedTableVisController', function ($scope, $element, Priv
    * - user submits a new filter to apply on results (activeFilter)
    */
   $scope.$watchMulti(['esResponse', 'vis.params', 'activeFilter'], function ([resp]) {
-
+    $scope.error = false;
+    $scope.message = "";
     let tableGroups = $scope.tableGroups = null;
     let hasSomeRows = $scope.hasSomeRows = null;
 
